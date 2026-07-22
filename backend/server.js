@@ -13,7 +13,8 @@ app.use(express.json());
 const frontendBuildPath = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendBuildPath));
 
-const dbPath = path.resolve(__dirname, 'kidit.db');
+const dbFolder = process.env.RENDER_DISK_PATH || __dirname;
+const dbPath = path.join(dbFolder, 'kidit.db');
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Lỗi khi kết nối database:', err.message);
