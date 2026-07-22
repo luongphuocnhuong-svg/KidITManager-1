@@ -11,12 +11,12 @@ export function Dashboard() {
   const [upcomingClasses, setUpcomingClasses] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/dashboard/stats')
+    fetch('/api/dashboard/stats')
       .then(res => res.json())
       .then(data => setStats(data))
       .catch(err => console.error(err));
       
-    fetch('http://localhost:5000/api/classes')
+    fetch('/api/classes')
       .then(res => res.json())
       .then(data => {
         // Just take the first 4 classes for demonstration

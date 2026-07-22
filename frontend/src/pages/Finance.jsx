@@ -13,7 +13,7 @@ export function Finance() {
 
   const fetchData = async () => {
     try {
-      const invRes = await fetch('http://localhost:5000/api/invoices');
+      const invRes = await fetch('/api/invoices');
       if (invRes.ok) {
         const data = await invRes.json();
         setInvoices(data);
@@ -27,7 +27,7 @@ export function Finance() {
         setStats({ revenue: rev, pending: pen, overdue: over });
       }
 
-      const stuRes = await fetch('http://localhost:5000/api/students');
+      const stuRes = await fetch('/api/students');
       if (stuRes.ok) setStudents(await stuRes.json());
     } catch (error) {
       console.error('Failed to fetch finance data:', error);
@@ -41,7 +41,7 @@ export function Finance() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:5000/api/invoices', {
+      const res = await fetch('/api/invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

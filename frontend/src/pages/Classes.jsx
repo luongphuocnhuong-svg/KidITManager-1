@@ -15,7 +15,7 @@ export function Classes() {
   const fetchClasses = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/classes');
+      const response = await fetch('/api/classes');
       if (response.ok) {
         const data = await response.json();
         setClasses(data);
@@ -45,7 +45,7 @@ export function Classes() {
       .join(', ');
 
     try {
-      const url = editId ? `http://localhost:5000/api/classes/${editId}` : 'http://localhost:5000/api/classes';
+      const url = editId ? `/api/classes/${editId}` : '/api/classes';
       const method = editId ? 'PUT' : 'POST';
 
       const response = await fetch(url, {

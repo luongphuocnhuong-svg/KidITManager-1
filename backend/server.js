@@ -9,6 +9,10 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the React frontend app
+const frontendBuildPath = path.join(__dirname, '../frontend/dist');
+app.use(express.static(frontendBuildPath));
+
 const dbPath = path.resolve(__dirname, 'kidit.db');
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
@@ -226,6 +230,11 @@ app.post('/api/invoices', (req, res) => {
       res.json({ success: true });
     }
   );
+});
+
+// Anything that doesn't match the API routes should be served the index.html for SPA routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendBuildPath, 'index.html'));
 });
 
 app.listen(PORT, () => {

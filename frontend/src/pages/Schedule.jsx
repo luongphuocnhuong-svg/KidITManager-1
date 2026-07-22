@@ -9,7 +9,7 @@ export function Schedule() {
   const [scheduleBlocks, setScheduleBlocks] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/classes')
+    fetch('/api/classes')
       .then(res => res.json())
       .then(data => {
         setClasses(data);

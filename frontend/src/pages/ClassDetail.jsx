@@ -17,13 +17,13 @@ export function ClassDetail() {
 
   const fetchData = async () => {
     try {
-      const classRes = await fetch(`http://localhost:5000/api/classes/${id}`);
+      const classRes = await fetch(`/api/classes/${id}`);
       if (classRes.ok) setClassInfo(await classRes.json());
 
-      const enrolledRes = await fetch(`http://localhost:5000/api/classes/${id}/students`);
+      const enrolledRes = await fetch(`/api/classes/${id}/students`);
       if (enrolledRes.ok) setEnrolledStudents(await enrolledRes.json());
 
-      const allRes = await fetch(`http://localhost:5000/api/students`);
+      const allRes = await fetch(`/api/students`);
       if (allRes.ok) setAllStudents(await allRes.json());
     } catch (error) {
       console.error('Failed to fetch class details:', error);
@@ -32,7 +32,7 @@ export function ClassDetail() {
 
   const fetchAttendance = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/classes/${id}/attendance?date=${attendanceDate}`);
+      const res = await fetch(`/api/classes/${id}/attendance?date=${attendanceDate}`);
       if (res.ok) {
         const data = await res.json();
         const attMap = {};
@@ -56,7 +56,7 @@ export function ClassDetail() {
     e.preventDefault();
     if (!selectedStudentId) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/classes/${id}/students`, {
+      const res = await fetch(`/api/classes/${id}/students`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ student_id: selectedStudentId })
@@ -72,7 +72,7 @@ export function ClassDetail() {
 
   const handleAttendance = async (studentId, status) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/classes/${id}/attendance`, {
+      const res = await fetch(`/api/classes/${id}/attendance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date: attendanceDate, student_id: studentId, status })

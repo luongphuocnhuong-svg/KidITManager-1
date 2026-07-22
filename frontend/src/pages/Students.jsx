@@ -13,7 +13,7 @@ export function Students() {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/students');
+      const response = await fetch('/api/students');
       if (response.ok) {
         const data = await response.json();
         setStudents(data);
@@ -36,7 +36,7 @@ export function Students() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const url = editId ? `http://localhost:5000/api/students/${editId}` : 'http://localhost:5000/api/students';
+      const url = editId ? `/api/students/${editId}` : '/api/students';
       const method = editId ? 'PUT' : 'POST';
       
       const response = await fetch(url, {
