@@ -234,7 +234,7 @@ app.post('/api/invoices', (req, res) => {
 });
 
 // Anything that doesn't match the API routes should be served the index.html for SPA routing
-app.get('*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(frontendBuildPath, 'index.html'));
 });
 
