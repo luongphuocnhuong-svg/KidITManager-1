@@ -56,9 +56,13 @@ export function Classes() {
       if (response.ok) {
         await fetchClasses();
         closeModal();
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        alert('Lỗi khi lưu lớp học: ' + (errData.error || 'Server Error'));
       }
     } catch (error) {
       console.error('Failed to save class:', error);
+      alert('Lỗi kết nối mạng: ' + error.message);
     }
   };
 

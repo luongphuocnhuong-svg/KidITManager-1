@@ -13,7 +13,18 @@ app.use(express.json());
 const frontendBuildPath = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendBuildPath));
 
-const dbFolder = process.env.RENDER_DISK_PATH || __dirname;
+const fs = require('fs');
+let dbFolder = process.env.RENDER_DISK_PATH || __dirname;
+if (process.env.RENDER_DISK_PATH) {
+  try {
+    if (!fs.existsSync(dbFolder)) {
+      fs.mkdirSync(dbFolder, { recursive: true });
+    }
+  } catch (err) {
+    console.error('Không thể tạo thư mục RENDER_DISK_PATH, fallback về __dirname:', err.message);
+    dbFolder = __dirname;
+  }
+}
 const dbPath = path.join(dbFolder, 'kidit.db');
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {

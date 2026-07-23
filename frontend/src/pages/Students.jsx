@@ -47,9 +47,13 @@ export function Students() {
       if (response.ok) {
         await fetchStudents();
         closeModal();
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        alert('Lỗi khi lưu học sinh: ' + (errData.error || 'Server Error'));
       }
     } catch (error) {
       console.error('Failed to save student:', error);
+      alert('Lỗi kết nối mạng: ' + error.message);
     }
   };
 
