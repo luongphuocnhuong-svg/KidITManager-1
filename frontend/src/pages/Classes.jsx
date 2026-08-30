@@ -6,11 +6,20 @@ import './Classes.css';
 
 export function Classes() {
   const [classes, setClasses] = useState([]);
+  const [teachersList, setTeachersList] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: '', teacher: '', room: '', capacity: '' });
-  const [scheduleSlots, setScheduleSlots] = useState([{ day: 'Thứ 2', startTime: '18:00', endTime: '20:00' }]);
+  const [formData, setFormData] = useState({ name: '', teacher: '', ta: '', room: '', capacity: '' });
+  const [scheduleSlots, setScheduleSlots] = useState([{ day: 'Thứ 2', startTime: '15:15', endTime: '17:15' }]);
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const TIME_SLOTS = [
+    { label: '07:00 - 09:00', start: '07:00', end: '09:00' },
+    { label: '09:00 - 11:00', start: '09:00', end: '11:00' },
+    { label: '15:15 - 17:15', start: '15:15', end: '17:15' },
+    { label: '17:15 - 19:15', start: '17:15', end: '19:15' },
+    { label: '19:15 - 21:15', start: '19:15', end: '21:15' }
+  ];
 
   const fetchClasses = async () => {
     setLoading(true);
@@ -27,8 +36,21 @@ export function Classes() {
     }
   };
 
+  const fetchTeachers = async () => {
+    try {
+      const response = await fetch('/api/teachers');
+      if (response.ok) {
+        const data = await response.json();
+        setTeachersList(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch teachers:', error);
+    }
+  };
+
   useEffect(() => {
     fetchClasses();
+    fetchTeachers();
   }, []);
 
   const handleInputChange = (e) => {
@@ -38,7 +60,7 @@ export function Classes() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Format schedule table into string: "Thứ 2 (18:00-20:00), Thứ 4..."
+    // Format schedule table into string: "Thứ 2 (15:15 - 17:15), Thứ 4..."
     const scheduleString = scheduleSlots
       .filter(s => s.startTime && s.endTime)
       .map(s => `${s.day} (${s.startTime} - ${s.endTime})`)
@@ -70,6 +92,7 @@ export function Classes() {
     setFormData({
       name: cls.name,
       teacher: cls.teacher || '',
+      ta: cls.ta || '',
       room: cls.room || '',
       capacity: cls.capacity || ''
     });
@@ -82,11 +105,11 @@ export function Classes() {
         if (match) {
           return { day: match[1], startTime: match[2], endTime: match[3] };
         }
-        return { day: 'Thứ 2', startTime: '18:00', endTime: '20:00' };
+        return { day: 'Thứ 2', startTime: '15:15', endTime: '17:15' };
       });
-      setScheduleSlots(parsedSlots.length > 0 ? parsedSlots : [{ day: 'Thứ 2', startTime: '18:00', endTime: '20:00' }]);
+      setScheduleSlots(parsedSlots.length > 0 ? parsedSlots : [{ day: 'Thứ 2', startTime: '15:15', endTime: '17:15' }]);
     } else {
-      setScheduleSlots([{ day: 'Thứ 2', startTime: '18:00', endTime: '20:00' }]);
+      setScheduleSlots([{ day: 'Thứ 2', startTime: '15:15', endTime: '17:15' }]);
     }
     
     setEditId(cls.id);
@@ -96,8 +119,8 @@ export function Classes() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditId(null);
-    setFormData({ name: '', teacher: '', room: '', capacity: '' });
-    setScheduleSlots([{ day: 'Thứ 2', startTime: '18:00', endTime: '20:00' }]);
+    setFormData({ name: '', teacher: '', ta: '', room: '', capacity: '' });
+    setScheduleSlots([{ day: 'Thứ 2', startTime: '15:15', endTime: '17:15' }]);
   };
 
   const handleScheduleChange = (index, field, value) => {
@@ -106,8 +129,18 @@ export function Classes() {
     setScheduleSlots(newSlots);
   };
 
+  const handleTimeSlotChange = (index, value) => {
+    const slot = TIME_SLOTS.find(s => `${s.start}-${s.end}` === value);
+    if (slot) {
+      const newSlots = [...scheduleSlots];
+      newSlots[index].startTime = slot.start;
+      newSlots[index].endTime = slot.end;
+      setScheduleSlots(newSlots);
+    }
+  };
+
   const addScheduleSlot = () => {
-    setScheduleSlots([...scheduleSlots, { day: 'Thứ 3', startTime: '', endTime: '' }]);
+    setScheduleSlots([...scheduleSlots, { day: 'Thứ 3', startTime: '15:15', endTime: '17:15' }]);
   };
 
   const removeScheduleSlot = (index) => {
@@ -159,6 +192,12 @@ export function Classes() {
                   <Users size={16} className="text-muted" />
                   <span>Giáo viên: <strong>{cls.teacher || 'Chưa phân công'}</strong></span>
                 </div>
+                {cls.ta && (
+                  <div className="info-row">
+                    <Users size={16} className="text-muted" />
+                    <span>Trợ giảng: <strong>{cls.ta}</strong></span>
+                  </div>
+                )}
                 <div className="info-row">
                   <Clock size={16} className="text-muted" />
                   <span>Lịch học: {cls.schedule || 'Chưa xếp'}</span>
@@ -198,10 +237,28 @@ export function Classes() {
                 <label>Tên Lớp học (*)</label>
                 <input required type="text" name="name" value={formData.name} onChange={handleInputChange} className="form-input" placeholder="VD: Toán 10 - Nâng cao" />
               </div>
-              <div className="form-group">
-                <label>Giáo viên phụ trách</label>
-                <input type="text" name="teacher" value={formData.teacher} onChange={handleInputChange} className="form-input" />
+              
+              <div className="grid-2 gap-4">
+                <div className="form-group">
+                  <label>Giáo viên phụ trách</label>
+                  <select name="teacher" value={formData.teacher} onChange={handleInputChange} className="form-input">
+                    <option value="">Chọn Giáo viên</option>
+                    {teachersList.map(t => (
+                      <option key={t.id} value={t.name}>{t.name} ({t.role === 1 ? 'GV' : 'TG'})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Trợ giảng</label>
+                  <select name="ta" value={formData.ta} onChange={handleInputChange} className="form-input">
+                    <option value="">Chọn Trợ giảng</option>
+                    {teachersList.map(t => (
+                      <option key={t.id} value={t.name}>{t.name} ({t.role === 1 ? 'GV' : 'TG'})</option>
+                    ))}
+                  </select>
+                </div>
               </div>
+
               <div className="form-group">
                 <label>Lịch học (Ca học)</label>
                 <div className="schedule-table-wrapper">
@@ -209,8 +266,7 @@ export function Classes() {
                     <thead>
                       <tr>
                         <th>Ngày trong tuần</th>
-                        <th>Giờ bắt đầu</th>
-                        <th>Giờ kết thúc</th>
+                        <th>Ca học</th>
                         <th></th>
                       </tr>
                     </thead>
@@ -229,20 +285,15 @@ export function Classes() {
                             </select>
                           </td>
                           <td>
-                            <input 
-                              type="time" 
+                            <select 
                               className="form-input schedule-input"
-                              value={slot.startTime} 
-                              onChange={(e) => handleScheduleChange(index, 'startTime', e.target.value)} 
-                            />
-                          </td>
-                          <td>
-                            <input 
-                              type="time" 
-                              className="form-input schedule-input"
-                              value={slot.endTime} 
-                              onChange={(e) => handleScheduleChange(index, 'endTime', e.target.value)} 
-                            />
+                              value={`${slot.startTime}-${slot.endTime}`}
+                              onChange={(e) => handleTimeSlotChange(index, e.target.value)}
+                            >
+                              {TIME_SLOTS.map(s => (
+                                <option key={s.label} value={`${s.start}-${s.end}`}>{s.label}</option>
+                              ))}
+                            </select>
                           </td>
                           <td>
                             <button 

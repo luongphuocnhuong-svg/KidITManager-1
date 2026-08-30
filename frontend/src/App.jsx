@@ -5,6 +5,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Students } from './pages/Students';
 import { Classes } from './pages/Classes';
 import { ClassDetail } from './pages/ClassDetail';
+import { Teachers } from './pages/Teachers';
 import { Finance } from './pages/Finance';
 import { Schedule } from './pages/Schedule';
 import './index.css';
@@ -16,6 +17,7 @@ function App() {
           <Route path="/" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="schedule" element={<Schedule />} />
+          <Route path="teachers" element={<Teachers />} />
           <Route path="students" element={<Students />} />
           <Route path="classes" element={<Classes />} />
           <Route path="classes/:id" element={<ClassDetail />} />

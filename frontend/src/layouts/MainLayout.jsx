@@ -8,7 +8,8 @@ import {
   CreditCard,
   Settings,
   LogOut,
-  Calendar
+  Calendar,
+  UserCheck
 } from 'lucide-react';
 import './MainLayout.css';
 
@@ -16,6 +17,7 @@ export function MainLayout() {
   const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/schedule', icon: Calendar, label: 'Thời khóa biểu' },
+    { path: '/teachers', icon: UserCheck, label: 'Giáo viên' },
     { path: '/students', icon: Users, label: 'Học sinh' },
     { path: '/classes', icon: GraduationCap, label: 'Lớp học' },
     { path: '/courses', icon: BookOpen, label: 'Khóa học' },

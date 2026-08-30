@@ -50,9 +50,22 @@ function initDb() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       teacher TEXT,
+      ta TEXT,
       schedule TEXT,
       room TEXT,
       capacity INTEGER
+    )`);
+
+    db.run("ALTER TABLE classes ADD COLUMN ta TEXT", (err) => {
+      // Bỏ qua lỗi nếu cột đã tồn tại
+    });
+
+    db.run(`CREATE TABLE IF NOT EXISTS teachers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      role INTEGER NOT NULL,
+      phone TEXT,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS class_students (
@@ -74,6 +87,18 @@ function initDb() {
       FOREIGN KEY (class_id) REFERENCES classes(id),
       FOREIGN KEY (student_id) REFERENCES students(id),
       UNIQUE(class_id, student_id, date)
+    )`);
+
+    db.run(`DROP TABLE IF EXISTS teacher_attendance`);
+    db.run(`CREATE TABLE IF NOT EXISTS teacher_attendance (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      class_id INTEGER,
+      teacher_name TEXT,
+      role TEXT,
+      date TEXT,
+      status TEXT,
+      FOREIGN KEY (class_id) REFERENCES classes(id),
+      UNIQUE(class_id, role, date)
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS invoices (
@@ -158,9 +183,9 @@ app.get('/api/classes/:id', (req, res) => {
 });
 
 app.post('/api/classes', (req, res) => {
-  const { name, teacher, schedule, room, capacity } = req.body;
-  db.run(`INSERT INTO classes (name, teacher, schedule, room, capacity) VALUES (?, ?, ?, ?, ?)`,
-    [name, teacher, schedule, room, capacity],
+  const { name, teacher, ta, schedule, room, capacity } = req.body;
+  db.run(`INSERT INTO classes (name, teacher, ta, schedule, room, capacity) VALUES (?, ?, ?, ?, ?, ?)`,
+    [name, teacher, ta, schedule, room, capacity],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ id: this.lastID });
@@ -169,14 +194,51 @@ app.post('/api/classes', (req, res) => {
 });
 
 app.put('/api/classes/:id', (req, res) => {
-  const { name, teacher, schedule, room, capacity } = req.body;
-  db.run(`UPDATE classes SET name = ?, teacher = ?, schedule = ?, room = ?, capacity = ? WHERE id = ?`,
-    [name, teacher, schedule, room, capacity, req.params.id],
+  const { name, teacher, ta, schedule, room, capacity } = req.body;
+  db.run(`UPDATE classes SET name = ?, teacher = ?, ta = ?, schedule = ?, room = ?, capacity = ? WHERE id = ?`,
+    [name, teacher, ta, schedule, room, capacity, req.params.id],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ success: true });
     }
   );
+});
+
+// ---------------- TEACHERS ----------------
+app.get('/api/teachers', (req, res) => {
+  db.all('SELECT * FROM teachers ORDER BY role ASC, name ASC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/teachers', (req, res) => {
+  const { name, role, phone } = req.body;
+  db.run(`INSERT INTO teachers (name, role, phone) VALUES (?, ?, ?)`,
+    [name, role, phone],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ id: this.lastID, name, role, phone });
+    }
+  );
+});
+
+app.put('/api/teachers/:id', (req, res) => {
+  const { name, role, phone } = req.body;
+  db.run(`UPDATE teachers SET name = ?, role = ?, phone = ? WHERE id = ?`,
+    [name, role, phone, req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true });
+    }
+  );
+});
+
+app.delete('/api/teachers/:id', (req, res) => {
+  db.run(`DELETE FROM teachers WHERE id = ?`, [req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
 });
 
 // ---------------- CLASS ENROLLMENTS ----------------
@@ -215,6 +277,27 @@ app.post('/api/classes/:id/attendance', (req, res) => {
   db.run(`INSERT INTO attendance (class_id, student_id, date, status) VALUES (?, ?, ?, ?) 
           ON CONFLICT(class_id, student_id, date) DO UPDATE SET status = excluded.status`,
     [req.params.id, student_id, date, status],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true });
+    }
+  );
+});
+
+// ---------------- TEACHER ATTENDANCE ----------------
+app.get('/api/classes/:id/teacher-attendance', (req, res) => {
+  const { date } = req.query; // YYYY-MM-DD
+  db.all('SELECT teacher_name, role, status FROM teacher_attendance WHERE class_id = ? AND date = ?', [req.params.id, date], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/classes/:id/teacher-attendance', (req, res) => {
+  const { date, teacher_name, role, status } = req.body;
+  db.run(`INSERT INTO teacher_attendance (class_id, teacher_name, role, date, status) VALUES (?, ?, ?, ?, ?) 
+          ON CONFLICT(class_id, role, date) DO UPDATE SET teacher_name = excluded.teacher_name, status = excluded.status`,
+    [req.params.id, teacher_name, role, date, status],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ success: true });

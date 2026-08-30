@@ -1,18 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
+import { Download } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { ScheduleExportTemplate } from './ScheduleExportTemplate';
 import './Schedule.css'; // Timetable styles
 
 const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-const HOURS = Array.from({ length: 16 }, (_, i) => i + 7); // 7:00 to 22:00
+const TIME_SLOTS = [
+  '07:00-09:00',
+  '09:00-11:00',
+  '15:15-17:15',
+  '17:15-19:15',
+  '19:15-21:15'
+];
 
 export function Schedule() {
-  const [classes, setClasses] = useState([]);
   const [scheduleBlocks, setScheduleBlocks] = useState([]);
+  const exportRef = useRef(null);
 
   useEffect(() => {
     fetch('/api/classes')
       .then(res => res.json())
       .then(data => {
-        setClasses(data);
         parseSchedules(data);
       })
       .catch(err => console.error(err));
@@ -24,7 +33,6 @@ export function Schedule() {
     classesData.forEach((cls, classIndex) => {
       if (!cls.schedule) return;
       
-      // Expected format: "Thứ 2 (18:00 - 20:00), Thứ 4 (18:00 - 20:00)"
       const slots = cls.schedule.split(', ');
       
       slots.forEach(slot => {
@@ -39,10 +47,10 @@ export function Schedule() {
             classId: cls.id,
             className: cls.name,
             teacher: cls.teacher,
+            ta: cls.ta,
             room: cls.room,
             day: day,
-            startTime: startTime,
-            endTime: endTime,
+            timeKey: `${startTime}-${endTime}`,
             colorIndex: classIndex % 6
           });
         }
@@ -52,80 +60,86 @@ export function Schedule() {
     setScheduleBlocks(blocks);
   };
 
-  const calculatePosition = (startTime, endTime) => {
-    const [startH, startM] = startTime.split(':').map(Number);
-    const [endH, endM] = endTime.split(':').map(Number);
-    
-    const startOffset = (startH - 7) * 60 + startM;
-    const duration = (endH - startH) * 60 + (endM - startM);
-    
-    // Each hour is 60px height
-    return {
-      top: `${startOffset}px`,
-      height: `${duration}px`
-    };
-  };
-
   const colorClasses = ['bg-blue', 'bg-green', 'bg-purple', 'bg-orange', 'bg-pink', 'bg-teal'];
+
+  const handleExport = async () => {
+    if (exportRef.current) {
+      try {
+        const canvas = await html2canvas(exportRef.current, {
+          scale: 2, // High resolution for better quality
+          useCORS: true,
+          backgroundColor: null,
+        });
+        const image = canvas.toDataURL('image/png', 1.0);
+        const link = document.createElement('a');
+        link.download = `Lich_Hoc_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')}.png`;
+        link.href = image;
+        link.click();
+      } catch (err) {
+        console.error('Lỗi khi xuất ảnh:', err);
+        alert('Không thể xuất ảnh, vui lòng thử lại.');
+      }
+    }
+  };
 
   return (
     <div className="schedule-page">
-      <div className="page-header mb-6">
-        <h1 className="text-h1">Thời khóa biểu toàn trung tâm</h1>
-        <p className="text-muted mt-2">Tổng quan lịch học của tất cả các lớp trong tuần.</p>
+      <div className="page-header mb-6 flex justify-between items-end">
+        <div>
+          <h1 className="text-h1">Thời khóa biểu toàn trung tâm</h1>
+          <p className="text-muted mt-2">Tổng quan lịch học của tất cả các lớp trong tuần.</p>
+        </div>
+        <Button onClick={handleExport} variant="primary">
+          <Download size={18} className="mr-2" />
+          Xuất ảnh
+        </Button>
       </div>
 
-      <div className="schedule-container glass-panel">
-        {/* Header Row */}
-        <div className="schedule-header-row">
-          <div className="time-col-header">Giờ</div>
+      <div className="schedule-container glass-panel p-4">
+        <div className="schedule-fixed-grid">
+          {/* Header Row */}
+          <div className="grid-header-cell time-header">Giờ / Ngày</div>
           {DAYS.map(day => (
-            <div key={day} className="day-col-header">{day}</div>
+            <div key={day} className="grid-header-cell day-header">{day}</div>
+          ))}
+
+          {/* Time Slots Rows */}
+          {TIME_SLOTS.map((slot) => (
+            <React.Fragment key={slot}>
+              {/* Time Label Cell */}
+              <div className="grid-time-cell">
+                <span>{slot.replace('-', ' - ')}</span>
+              </div>
+              
+              {/* Day Cells for this Time Slot */}
+              {DAYS.map((day) => {
+                // Find blocks that fall into this exact time slot and day
+                const dayBlocks = scheduleBlocks.filter(b => b.day === day && b.timeKey === slot);
+                
+                return (
+                  <div key={`${day}-${slot}`} className="grid-body-cell">
+                    {dayBlocks.map(block => (
+                      <div 
+                        key={block.id} 
+                        className={`class-block ${colorClasses[block.colorIndex]}`}
+                      >
+                        <div className="block-title">{block.className}</div>
+                        <div className="block-teacher text-small">
+                          {block.teacher || 'Chưa PC'}
+                          {block.ta && ` / TG: ${block.ta}`}
+                        </div>
+                        <div className="block-detail text-small">P.{block.room || '—'}</div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </React.Fragment>
           ))}
         </div>
-
-        {/* Body */}
-        <div className="schedule-body">
-          {/* Time Column */}
-          <div className="time-column">
-            {HOURS.map(hour => (
-              <div key={hour} className="time-slot-label">
-                <span>{`${hour.toString().padStart(2, '0')}:00`}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Days Columns */}
-          {DAYS.map(day => {
-            const dayBlocks = scheduleBlocks.filter(b => b.day === day);
-            
-            return (
-              <div key={day} className="day-column">
-                {/* Background grid lines */}
-                {HOURS.map(hour => (
-                  <div key={hour} className="grid-cell"></div>
-                ))}
-                
-                {/* Class Blocks */}
-                {dayBlocks.map(block => {
-                  const pos = calculatePosition(block.startTime, block.endTime);
-                  return (
-                    <div 
-                      key={block.id} 
-                      className={`class-block ${colorClasses[block.colorIndex]}`}
-                      style={{ top: pos.top, height: pos.height }}
-                    >
-                      <div className="block-title">{block.className}</div>
-                      <div className="block-time">{block.startTime} - {block.endTime}</div>
-                      <div className="block-detail">P.{block.room || '—'}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
       </div>
+      
+      <ScheduleExportTemplate ref={exportRef} scheduleBlocks={scheduleBlocks} applyDate="" />
     </div>
   );
 }
